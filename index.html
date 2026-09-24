@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EDITX STUDIO | Cinematic Video Editor & Motion Architect</title>
+  <meta name="description" content="Award-winning video editing and motion design showreel portfolio by EDITX STUDIO." />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              black: '#030306',
+              dark: '#07070d',
+              card: 'rgba(15, 15, 25, 0.65)',
+              cyan: '#00f0ff',
+              magenta: '#b026ff',
+              amber: '#ffaa00',
+              border: 'rgba(255, 255, 255, 0.08)',
+            }
+          },
+          fontFamily: {
+            mono: ['Space Mono', 'JetBrains Mono', 'monospace'],
+            sans: ['Inter', 'sans-serif'],
+            display: ['Syncopate', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Three.js & GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    body {
+      background-color: #030306;
+      color: #e2e8f0;
+      overflow-x: hidden;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+    
+    /* Subtle Scanlines & Film Grain Overlay */
+    .scanlines {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 35px -5px rgba(0, 240, 255, 0.35);
+    }
+    .glow-magenta {
+      box-shadow: 0 0 35px -5px rgba(176, 38, 255, 0.35);
+    }
+    .text-glow {
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+    }
+    
+    /* Glassmorphism Classes */
+    .glass-panel {
+      background: rgba(11, 12, 22, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(16, 17, 30, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), border-color 0.3s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(0, 240, 255, 0.4);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030306;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e1e2f;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f0ff;
+    }
+
+    /* 3D Card Tilt Wrapper */
+    .tilt-card {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    /* Glitch Animation */
+    @keyframes glitch {
+      0% { transform: translate(0) }
+      20% { transform: translate(-2px, 2px) }
+      40% { transform: translate(-2px, -2px) }
+      60% { transform: translate(2px, 2px) }
+      80% { transform: translate(2px, -2px) }
+      100% { transform: translate(0) }
+    }
+    .glitch-hover:hover {
+      animation: glitch 0.25s infinite;
+    }
+  </style>
+</head>
+<body class="relative">
+
+  <!-- Ambient Audio & Scanlines FX -->
+  <div class="fixed inset-0 scanlines z-40 pointer-events-none"></div>
+
+  <!-- Three.js Dynamic WebGL Canvas Background -->
+  <canvas id="hero-webgl" class="fixed inset-0 w-full h-full -z-10 pointer-events-none"></canvas>
+
+  <!-- ================= TOP NAVIGATION HUD ================= -->
+  <nav class="fixed top-0 left-0 w-full z-50 px-4 md:px-10 py-4 transition-all duration-300" id="navbar">
+    <div class="max-w-7xl mx-auto flex items-center justify-between glass-panel rounded-full px-5 py-3 shadow-2xl">
+      <!-- Logo Reveal -->
+      <a href="#hero" class="flex items-center space-x-3 group">
+        <div class="relative w-9 h-9 rounded-lg bg-black border border-cyber-cyan flex items-center justify-center glow-cyan overflow-hidden">
+          <span class="font-display font-black text-cyber-cyan text-sm tracking-tighter">EX</span>
+          <div class="absolute inset-0 bg-cyber-cyan opacity-20 group-hover:opacity-40 transition-opacity"></div>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-display text-sm tracking-wider font-bold text-white group-hover:text-cyber-cyan transition-colors" id="nav-brand-name">EDITX STUDIO</span>
+          <span class="font-mono text-[9px] text-cyber-cyan tracking-widest uppercase">REC • 4K 60FPS</span>
+        </div>
+      </a>
+
+      <!-- Desktop Links -->
+      <div class="hidden md:flex items-center space-x-8 text-xs font-mono tracking-widest uppercase">
+        <a href="#showreel" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">01.</span> Showreel</a>
+        <a href="#work" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">02.</span> Works</a>
+        <a href="#lab" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">03.</span> Motion Lab</a>
+        <a href="#before-after" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">04.</span> Grading</a>
+        <a href="#services" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">05.</span> Services</a>
+        <a href="#contact" class="hover:text-cyber-cyan transition-colors flex items-center gap-1.5"><span class="text-cyber-cyan">06.</span> Contact</a>
+      </div>
+
+      <!-- Quick Action & Admin Launcher -->
+      <div class="flex items-center space-x-3">
+        <button onclick="openAdminModal()" title="Studio Owner Admin Mode" class="p-2 rounded-full glass-panel hover:border-cyber-cyan text-gray-400 hover:text-cyber-cyan transition-all">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+        </button>
+        <a href="#contact" class="relative group overflow-hidden px-4 py-2 rounded-full bg-cyber-cyan text-black font-mono text-xs font-bold tracking-wider uppercase transition-all duration-300 hover:bg-white glow-cyan">
+          <span class="relative z-10">Hire Studio</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= HERO SECTION (3D TIMELINE WORKSPACE) ================= -->
+  <section id="hero" class="relative min-h-screen flex flex-col justify-center items-center px-4 pt-28 pb-16 overflow-hidden">
+    
+    <!-- Timeline HUD Overlay -->
+    <div class="absolute top-20 left-6 hidden lg:flex flex-col font-mono text-[10px] text-gray-400 space-y-1">
+      <div class="flex items-center space-x-2 text-cyber-cyan">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <span class="tracking-widest">LIVE TIMELINE // V-TRACK 04</span>
+      </div>
+      <div>PROJECT: SHOWREEL_MASTER_2026.prproj</div>
+      <div>FPS: 59.94 DCI-4K | LUT: ACEScc FILM</div>
+      <div>PLAYHEAD: <span id="hero-timecode" class="text-cyber-cyan">00:01:24:18</span></div>
+    </div>
+
+    <div class="max-w-5xl mx-auto text-center z-10 space-y-6">
+      <!-- Tag / Badge -->
+      <div class="inline-flex items-center space-x-3 px-4 py-1.5 rounded-full glass-panel border border-cyber-cyan/30 text-xs font-mono text-cyber-cyan tracking-widest uppercase">
+        <i data-lucide="film" class="w-3.5 h-3.5"></i>
+        <span>Virtual Post-Production Suite</span>
+      </div>
+
+      <!-- Bold 3D Kinetic Typography -->
+      <h1 class="text-4xl sm:text-6xl md:text-8xl font-display font-black tracking-tight text-white uppercase leading-none">
+        VIDEO <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-white to-cyber-magenta text-glow">EDITOR</span>
+      </h1>
+      
+      <p class="text-lg md:text-2xl font-light text-gray-300 max-w-2xl mx-auto tracking-wide">
+        “Turning Raw Footage Into Visual Stories.”
+      </p>
+
+      <!-- Simulated Floating Editing Timeline Component -->
+      <div class="w-full max-w-3xl mx-auto glass-panel p-3.5 rounded-xl border border-white/10 glow-cyan mt-6 text-left">
+        <!-- Tracks Header -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-mono text-[11px] text-gray-400">
+          <div class="flex items-center space-x-3">
+            <span class="text-cyber-cyan font-bold">SEQUENCE: MAIN_CUT</span>
+            <span class="bg-white/10 px-2 py-0.5 rounded text-[10px]">PRORES 4444 XQ</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-cyber-amber text-[10px]">FX: 12 LAYERS ACTIVE</span>
+          </div>
+        </div>
+        
+        <!-- Timeline Track Visualizer -->
+        <div class="space-y-1.5 font-mono text-[10px]">
+          <!-- Video 2 (VFX/Motion) -->
+          <div class="flex items-center space-x-2">
+            <span class="w-8 text-gray-500 font-bold">V2</span>
+            <div class="flex-1 h-6 bg-purple-950/40 rounded border border-purple-500/30 relative overflow-hidden flex items-center px-3">
+              <div class="absolute left-1/4 w-1/3 h-full bg-cyber-magenta/20 border-l border-r border-cyber-magenta/60 flex items-center justify-center text-white/80">
+                3D Camera Track + Glitch FX
+              </div>
+            </div>
+          </div>
+          <!-- Video 1 (Main Cut) -->
+          <div class="flex items-center space-x-2">
+            <span class="w-8 text-gray-500 font-bold">V1</span>
+            <div class="flex-1 h-6 bg-cyan-950/40 rounded border border-cyber-cyan/30 relative overflow-hidden flex items-center px-3">
+              <div class="w-2/5 h-full bg-cyber-cyan/20 border-r border-cyber-cyan/60 flex items-center px-2 text-white/90">
+                A-Roll_Cinematic_Car_01.mov
+              </div>
+              <div class="w-2/5 h-full bg-blue-500/20 border-r border-blue-400/60 flex items-center px-2 text-white/90">
+                SpeedRamp_Drone_HighSpeed.braw
+              </div>
+            </div>
+          </div>
+          <!-- Audio 1 (Master SFX) -->
+          <div class="flex items-center space-x-2">
+            <span class="w-8 text-gray-500 font-bold">A1</span>
+            <div class="flex-1 h-5 bg-emerald-950/30 rounded border border-emerald-500/30 relative flex items-center px-2">
+              <div class="w-full flex items-center justify-between opacity-50 text-[9px] text-emerald-400">
+                <span>▲ Whoosh_DeepImpact.wav</span>
+                <span>Spatial Sub-Bass Mastering (96kHz)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playhead Scrub Line -->
+        <div class="relative w-full h-1 bg-white/10 mt-3 rounded-full overflow-hidden">
+          <div id="playhead-bar" class="h-full bg-cyber-cyan w-1/3 shadow-[0_0_10px_#00f0ff]"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+        <a href="#showreel" class="px-8 py-3.5 rounded-full bg-white text-black font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-cyber-cyan transition-all hover:scale-105 shadow-xl">
+          <i data-lucide="play" class="w-4 h-4 fill-current"></i> Launch Showreel
+        </a>
+        <a href="#work" class="px-8 py-3.5 rounded-full glass-panel border border-white/20 text-white font-mono text-xs font-bold uppercase tracking-wider hover:border-cyber-cyan hover:text-cyber-cyan transition-all">
+          Explore Works (40+)
+        </a>
+      </div>
+
+      <!-- Live Studio Metrics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-white/5 font-mono">
+        <div class="p-3 glass-panel rounded-lg">
+          <div class="text-2xl md:text-3xl font-bold text-cyber-cyan">150M+</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-widest mt-1">Total Client Views</div>
+        </div>
+        <div class="p-3 glass-panel rounded-lg">
+          <div class="text-2xl md:text-3xl font-bold text-cyber-magenta">450+</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-widest mt-1">Projects Shipped</div>
+        </div>
+        <div class="p-3 glass-panel rounded-lg">
+          <div class="text-2xl md:text-3xl font-bold text-cyber-amber">4K / 8K</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-widest mt-1">HDR Color Master</div>
+        </div>
+        <div class="p-3 glass-panel rounded-lg">
+          <div class="text-2xl md:text-3xl font-bold text-emerald-400">99.8%</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-widest mt-1">Retention Score</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= CINEMATIC SHOWREEL SECTION ================= -->
+  <section id="showreel" class="py-24 px-4 relative z-20">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+        <div>
+          <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// SECTION 01</span>
+          <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+            2026 MASTER <span class="text-cyber-cyan">SHOWREEL</span>
+          </h2>
+        </div>
+        <p class="text-gray-400 font-mono text-xs max-w-md mt-2 md:mt-0">
+          Commercials, high-retention social content, cinematic music videos, and 3D visual effects compositing.
+        </p>
+      </div>
+
+      <!-- Expandable 3D Cinema Frame -->
+      <div id="showreel-container" class="relative rounded-2xl overflow-hidden glass-panel border border-white/20 shadow-2xl transition-all duration-700 aspect-video group">
+        <!-- Live Video Element -->
+        <video id="main-reel-video" class="w-full h-full object-cover" loop playsinline muted poster="https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=1600&q=80">
+          <!-- Public high-def creative commons open cinema reel -->
+          <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" type="video/mp4" />
+        </video>
+
+        <!-- Video Player Overlay UI -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 flex flex-col justify-between p-6 pointer-events-none group-hover:opacity-100 transition-opacity">
+          <!-- Top Bar -->
+          <div class="flex items-center justify-between pointer-events-auto">
+            <span class="font-mono text-xs bg-red-600/80 text-white px-3 py-1 rounded-full uppercase tracking-widest font-bold">
+              • 4K DIRECTORS CUT
+            </span>
+            <div class="flex items-center space-x-2 font-mono text-xs text-gray-300">
+              <span class="bg-black/60 px-3 py-1 rounded border border-white/10">COLOR: TEAL & ORANGE ACES</span>
+            </div>
+          </div>
+
+          <!-- Center Large Play Button -->
+          <div class="flex items-center justify-center pointer-events-auto">
+            <button onclick="toggleReelPlay()" id="reel-play-btn" class="w-20 h-20 rounded-full bg-cyber-cyan/90 text-black flex items-center justify-center glow-cyan hover:scale-110 transition-transform">
+              <i data-lucide="play" class="w-8 h-8 fill-current ml-1" id="reel-play-icon"></i>
+            </button>
+          </div>
+
+          <!-- Bottom Control Bar -->
+          <div class="flex items-center justify-between font-mono text-xs text-white pointer-events-auto bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10">
+            <div class="flex items-center space-x-4">
+              <button onclick="toggleReelMute()" class="hover:text-cyber-cyan transition-colors" id="mute-btn">
+                <i data-lucide="volume-x" class="w-5 h-5" id="mute-icon"></i>
+              </button>
+              <span id="reel-timer" class="text-cyber-cyan">00:00 / 02:45</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span class="hidden sm:inline text-gray-400">FPS: 59.94</span>
+              <button onclick="requestFullScreenReel()" class="hover:text-cyber-cyan">
+                <i data-lucide="maximize" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= WORK / PORTFOLIO SECTION (3D TILT CARDS) ================= -->
+  <section id="work" class="py-24 px-4 max-w-7xl mx-auto relative z-20">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+      <div>
+        <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// SECTION 02</span>
+        <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+          FEATURED <span class="text-cyber-cyan">WORKS</span>
+        </h2>
+      </div>
+      <!-- Filter Tags -->
+      <div class="flex flex-wrap gap-2 mt-4 md:mt-0 font-mono text-xs" id="portfolio-filters">
+        <button onclick="filterProjects('all')" class="filter-btn px-4 py-1.5 rounded-full bg-cyber-cyan text-black font-bold">ALL</button>
+        <button onclick="filterProjects('reels')" class="filter-btn px-4 py-1.5 rounded-full glass-panel text-gray-300 hover:text-white">SHORTS & REELS</button>
+        <button onclick="filterProjects('commercial')" class="filter-btn px-4 py-1.5 rounded-full glass-panel text-gray-300 hover:text-white">COMMERCIALS</button>
+        <button onclick="filterProjects('motion')" class="filter-btn px-4 py-1.5 rounded-full glass-panel text-gray-300 hover:text-white">3D MOTION</button>
+        <button onclick="filterProjects('music')" class="filter-btn px-4 py-1.5 rounded-full glass-panel text-gray-300 hover:text-white">MUSIC VIDEOS</button>
+      </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Rendered dynamically from Data / LocalStorage -->
+    </div>
+  </section>
+
+
+  <!-- ================= BEFORE / AFTER INTERACTIVE COMPARISON ================= -->
+  <section id="before-after" class="py-24 px-4 bg-cyber-dark/40 relative z-20 border-y border-white/5">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-10">
+        <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// COLOR & FINISHING LABORATORY</span>
+        <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+          RAW LOG <span class="text-cyber-magenta">VS</span> FINAL GRADE
+        </h2>
+        <p class="text-gray-400 font-mono text-xs mt-2">
+          Drag the interactive split-slider below to reveal the color science and post-processing transformation.
+        </p>
+      </div>
+
+      <!-- Draggable Split Screen Component -->
+      <div id="split-container" class="relative h-[320px] sm:h-[450px] rounded-2xl overflow-hidden glass-panel border border-white/20 select-none shadow-2xl cursor-ew-resize">
+        <!-- Background Layer: RAW Footage (Washed out, flat log) -->
+        <div class="absolute inset-0 bg-cover bg-center filter grayscale contrast-50 brightness-110" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80');">
+          <div class="absolute top-4 left-4 bg-black/80 px-3 py-1 rounded text-xs font-mono text-yellow-400 border border-yellow-400/40">
+            RAW FOOTAGE [SONY S-LOG3 / UNGRADED]
+          </div>
+        </div>
+
+        <!-- Foreground Layer: FINAL MASTER (Teal & Orange, high contrast, film grain) -->
+        <div id="split-reveal" class="absolute inset-y-0 left-0 w-1/2 overflow-hidden bg-cover bg-center filter contrast-125 saturate-150" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80'); box-shadow: inset 0 0 100px rgba(0,0,0,0.8);">
+          <!-- Color LUT tint overlay -->
+          <div class="absolute inset-0 bg-gradient-to-r from-cyan-900/30 via-transparent to-amber-900/30 mix-blend-color"></div>
+          <div class="absolute top-4 left-4 bg-black/80 px-3 py-1 rounded text-xs font-mono text-cyber-cyan border border-cyber-cyan">
+            FINAL GRADE [ACEScc / 35MM FILM MASTER]
+          </div>
+        </div>
+
+        <!-- Draggable Handle Bar -->
+        <div id="split-handle" class="absolute top-0 bottom-0 left-1/2 w-1 bg-cyber-cyan shadow-[0_0_15px_#00f0ff] -translate-x-1/2 flex items-center justify-center">
+          <div class="w-10 h-10 rounded-full bg-black border-2 border-cyber-cyan flex items-center justify-center text-cyber-cyan shadow-xl">
+            <i data-lucide="chevrons-left-right" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Grading Controls / Telemetry -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 font-mono text-xs">
+        <div class="p-3 glass-panel rounded border border-white/5">
+          <span class="text-gray-500">COLOR SPACE</span>
+          <p class="text-cyber-cyan font-bold">DaVinci Wide Gamut</p>
+        </div>
+        <div class="p-3 glass-panel rounded border border-white/5">
+          <span class="text-gray-500">FILM EMULATION</span>
+          <p class="text-white font-bold">Kodak 2383 Print D65</p>
+        </div>
+        <div class="p-3 glass-panel rounded border border-white/5">
+          <span class="text-gray-500">NOISE REDUCTION</span>
+          <p class="text-emerald-400 font-bold">Temporal 3-Frame (TNR)</p>
+        </div>
+        <div class="p-3 glass-panel rounded border border-white/5">
+          <span class="text-gray-500">MASTER DELIVERABLE</span>
+          <p class="text-cyber-magenta font-bold">Rec.709 & HDR10 MaxCLL</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= MINIATURE 3D MOTION GRAPHICS LAB ================= -->
+  <section id="lab" class="py-24 px-4 max-w-7xl mx-auto relative z-20">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// LAB 03</span>
+      <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+        MOTION GRAPHICS <span class="text-cyber-cyan">LAB</span>
+      </h2>
+      <p class="text-gray-400 font-mono text-xs mt-2">
+        Kinetic typography, procedural particle vectors, 3D camera tracking, and custom interface design.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Motion Box 1: Kinetic Typography -->
+      <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-cyber-cyan/50 transition-colors">
+        <div class="flex justify-between items-center text-xs font-mono text-gray-400 mb-6">
+          <span>MODULE // 01</span>
+          <i data-lucide="type" class="w-4 h-4 text-cyber-cyan"></i>
+        </div>
+        <div class="h-44 flex flex-col justify-center items-center text-center overflow-hidden">
+          <div class="text-3xl font-display font-black tracking-widest text-white uppercase glitch-hover cursor-pointer">
+            KINETIC
+          </div>
+          <div class="text-xl font-mono text-cyber-cyan tracking-widest uppercase mt-1">
+            STORYTELLING
+          </div>
+          <span class="text-[10px] font-mono text-gray-500 mt-3">Hover to trigger kinetic glitch response</span>
+        </div>
+        <div class="border-t border-white/10 pt-4 font-mono text-xs text-gray-400 flex justify-between">
+          <span>Easing: Custom Cubic-Bezier</span>
+          <span class="text-cyber-cyan">120 FPS</span>
+        </div>
+      </div>
+
+      <!-- Motion Box 2: Bezier Curve Keyframe Simulator -->
+      <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-cyber-magenta/50 transition-colors">
+        <div class="flex justify-between items-center text-xs font-mono text-gray-400 mb-6">
+          <span>MODULE // 02</span>
+          <i data-lucide="activity" class="w-4 h-4 text-cyber-magenta"></i>
+        </div>
+        <div class="h-44 flex items-center justify-center relative">
+          <!-- Animated SVG Graph Curve -->
+          <svg class="w-full h-32" viewBox="0 0 200 100">
+            <path d="M 10 90 C 70 90, 80 10, 190 10" fill="none" stroke="#b026ff" stroke-width="3" stroke-linecap="round" class="filter drop-shadow-[0_0_8px_#b026ff]"/>
+            <circle cx="80" cy="10" r="4" fill="#00f0ff" class="animate-ping" />
+            <circle cx="80" cy="10" r="5" fill="#00f0ff" />
+            <line x1="80" y1="10" x2="140" y2="10" stroke="#ffffff" stroke-dasharray="2,2" stroke-width="1" />
+          </svg>
+          <div class="absolute bottom-1 text-[10px] font-mono text-cyber-magenta">Dynamic Velocity Curve Ramping</div>
+        </div>
+        <div class="border-t border-white/10 pt-4 font-mono text-xs text-gray-400 flex justify-between">
+          <span>Graph: Hyperbolic Interpolation</span>
+          <span class="text-cyber-magenta">Zero Motion Stutter</span>
+        </div>
+      </div>
+
+      <!-- Motion Box 3: 3D Point Tracker & UI HUD -->
+      <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-cyber-amber/50 transition-colors">
+        <div class="flex justify-between items-center text-xs font-mono text-gray-400 mb-6">
+          <span>MODULE // 03</span>
+          <i data-lucide="crosshair" class="w-4 h-4 text-cyber-amber"></i>
+        </div>
+        <div class="h-44 relative border border-cyber-amber/20 rounded-lg flex items-center justify-center bg-black/40">
+          <div class="w-20 h-20 border border-cyber-amber/60 rounded-full animate-spin flex items-center justify-center">
+            <div class="w-2 h-2 bg-cyber-amber rounded-full"></div>
+          </div>
+          <div class="absolute top-2 left-2 font-mono text-[9px] text-cyber-amber">
+            TRACK_PT: [X: 842.1, Y: 390.4, Z: 12.8]
+          </div>
+          <div class="absolute bottom-2 right-2 font-mono text-[9px] text-emerald-400">
+            SOLVE ERROR: 0.14px (PERFECT)
+          </div>
+        </div>
+        <div class="border-t border-white/10 pt-4 font-mono text-xs text-gray-400 flex justify-between">
+          <span>3D Camera Solve</span>
+          <span class="text-cyber-amber">Mocha Pro / SynthEyes</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= SKILLS MATRIX (ANIMATED VISUAL SYSTEMS) ================= -->
+  <section id="skills" class="py-24 px-4 bg-cyber-dark/40 relative z-20 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// SPECIALIZED ARSENAL</span>
+        <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+          TECHNICAL <span class="text-cyber-cyan">MASTERY</span>
+        </h2>
+        <p class="text-gray-400 font-mono text-xs mt-2">
+          Holographic visualization of post-production mastery, software engines, and workflow pipelines.
+        </p>
+      </div>
+
+      <!-- Animated Radial & Matrix Systems Grid -->
+      <div id="skills-grid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= CLIENT SERVICES SECTION (PRO SERVICES ONLY) ================= -->
+  <section id="services" class="py-24 px-4 max-w-7xl mx-auto relative z-20">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+      <div>
+        <span class="text-cyber-cyan font-mono text-xs tracking-widest uppercase">// COMMERCIAL ENGAGEMENTS</span>
+        <h2 class="text-3xl md:text-5xl font-display font-black text-white uppercase mt-1">
+          PRODUCTION <span class="text-cyber-cyan">SERVICES</span>
+        </h2>
+      </div>
+      <p class="text-gray-400 font-mono text-xs max-w-md mt-2 md:mt-0">
+        Professional client-ready video editing, commercial finishes, and retainer engagements.
+      </p>
+    </div>
+
+    <!-- Services Grid -->
+    <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Rendered dynamically -->
+    </div>
+  </section>
+
+
+  <!-- ================= CONTACT SECTION & 3D GLASS TERMINAL ================= -->
+  <section id="contact" class="py-28 px-4 relative z-20 overflow-hidden">
+    <div class="max-w-4xl mx-auto">
+      <!-- 3D Floating Glass Panel -->
+      <div class="glass-panel p-8 sm:p-14 rounded-3xl border border-white/20 glow-cyan relative overflow-hidden">
+        
+        <!-- Background Ambient Accent Glow -->
+        <div class="absolute -top-32 -right-32 w-80 h-80 bg-cyber-cyan/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-cyber-magenta/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="text-center space-y-4 mb-10">
+          <span class="font-mono text-xs text-cyber-cyan tracking-widest uppercase">// INITIATE COLLABORATION</span>
+          <h2 class="text-3xl sm:text-5xl font-display font-black text-white uppercase">
+            LET'S CREATE SOMETHING <span class="text-cyber-cyan">THAT MOVES.</span>
+          </h2>
+          <p class="text-gray-300 font-mono text-xs max-w-md mx-auto">
+            Ready to turn your raw vision into an unforgettable visual experience? Fill out the brief below or connect directly.
+          </p>
+        </div>
+
+        <!-- Quick Connect Buttons -->
+        <div class="flex flex-wrap justify-center gap-4 mb-10">
+          <a id="btn-whatsapp" href="https://wa.me/15550192834" target="_blank" class="px-6 py-3 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-mono text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 hover:text-black transition-all">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> Direct WhatsApp
+          </a>
+          <a id="btn-email-direct" href="mailto:contact@editxstudio.com" class="px-6 py-3 rounded-full bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-mono text-xs font-bold flex items-center gap-2 hover:bg-cyber-cyan hover:text-black transition-all">
+            <i data-lucide="mail" class="w-4 h-4"></i> Send Email
+          </a>
+          <a id="btn-instagram" href="https://instagram.com" target="_blank" class="px-6 py-3 rounded-full bg-purple-500/20 border border-cyber-magenta text-purple-300 font-mono text-xs font-bold flex items-center gap-2 hover:bg-cyber-magenta hover:text-white transition-all">
+            <i data-lucide="instagram" class="w-4 h-4"></i> Instagram Reel
+          </a>
+        </div>
+
+        <!-- Project Inquiry Form -->
+        <form onsubmit="handleInquirySubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">YOUR NAME / BRAND</label>
+              <input type="text" required placeholder="Alex Rivera" class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyber-cyan" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">EMAIL ADDRESS</label>
+              <input type="email" required placeholder="alex@studio.com" class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyber-cyan" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">PROJECT TYPE</label>
+              <select class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyber-cyan">
+                <option>Commercial / Brand Film</option>
+                <option>High-Retention Viral Reels (Retainer)</option>
+                <option>YouTube Docu-Storytelling</option>
+                <option>Color Grading & Finishing</option>
+                <option>3D Motion Graphics & VFX</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">ESTIMATED BUDGET</label>
+              <select class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyber-cyan">
+                <option>$1,500 - $3,000</option>
+                <option>$3,000 - $7,500</option>
+                <option>$7,500 - $15,000+</option>
+                <option>Monthly Retainer</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-mono text-xs text-gray-400 mb-1">PROJECT SCOPE / TIMELINE</label>
+            <textarea rows="3" required placeholder="Provide details about footage volume, reference links, and deadline..." class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyber-cyan"></textarea>
+          </div>
+
+          <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-cyber-cyan to-blue-600 text-black font-mono text-xs font-black tracking-widest uppercase hover:brightness-125 transition-all shadow-xl glow-cyan">
+            SUBMIT PRODUCTION BRIEF // BOOK NOW
+          </button>
+        </form>
+
+        <div id="form-toast" class="hidden mt-4 p-4 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-mono text-xs text-center">
+          ✓ Inquiry Dispatched. EDITX Studio will review your footage specs within 12 hours.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER HUD ================= -->
+  <footer class="border-t border-white/10 py-10 px-4 relative z-20 text-center font-mono text-xs text-gray-500">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-cyber-cyan"></span>
+        <span class="text-white font-bold" id="footer-brand">EDITX STUDIO</span>
+        <span>— HIGH PERFORMANCE POST-PRODUCTION</span>
+      </div>
+      <div>
+        <span>ALL RIGHTS RESERVED © <span id="current-year">2026</span></span>
+      </div>
+      <div>
+        <button onclick="openAdminModal()" class="text-cyber-cyan hover:underline flex items-center gap-1">
+          <i data-lucide="lock" class="w-3 h-3"></i> Studio Admin Portal
+        </button>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ================= PROJECT DETAIL MODAL ("WATCH EDIT") ================= -->
+  <div id="project-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-4xl rounded-2xl border border-white/20 overflow-hidden relative max-h-[90vh] flex flex-col">
+      <!-- Close Button -->
+      <button onclick="closeProjectModal()" class="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/80 text-white hover:text-cyber-cyan">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Video Player Preview Container -->
+      <div class="w-full aspect-video bg-black relative">
+        <video id="modal-video" controls class="w-full h-full object-cover">
+          <source src="" type="video/mp4" />
+        </video>
+      </div>
+
+      <!-- Info Area -->
+      <div class="p-6 overflow-y-auto space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+          <div>
+            <span id="modal-category" class="font-mono text-xs text-cyber-cyan uppercase tracking-widest">COMMERCIAL</span>
+            <h3 id="modal-title" class="text-2xl font-display font-black text-white uppercase mt-0.5">PROJECT TITLE</h3>
+          </div>
+          <div class="font-mono text-xs text-gray-400 flex items-center gap-4">
+            <div>CUTS: <span id="modal-cuts" class="text-cyber-cyan">184</span></div>
+            <div>TIMELINE: <span id="modal-timeline" class="text-cyber-magenta">4K HDR</span></div>
+          </div>
+        </div>
+
+        <p id="modal-desc" class="text-gray-300 text-sm leading-relaxed"></p>
+
+        <!-- Tools Used Badges -->
+        <div class="pt-2">
+          <span class="font-mono text-xs text-gray-400 block mb-2">PRODUCTION PIPELINE TOOLS:</span>
+          <div id="modal-tools" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= ADMIN CMS MODAL (EDIT CONTENT WITHOUT CODE) ================= -->
+  <div id="admin-modal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-4xl rounded-2xl border border-cyber-cyan/40 overflow-hidden relative max-h-[92vh] flex flex-col glow-cyan">
+      
+      <!-- Admin Header -->
+      <div class="p-5 border-b border-white/10 flex items-center justify-between bg-black/50">
+        <div class="flex items-center space-x-3">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-cyber-cyan"></i>
+          <h3 class="font-display font-bold text-white text-sm uppercase">EDITX STUDIO // ADMIN CMS PORTAL</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Passcode Auth Screen (if locked) -->
+      <div id="admin-auth" class="p-10 flex flex-col items-center justify-center text-center space-y-4 my-auto">
+        <div class="w-14 h-14 rounded-full bg-cyber-cyan/20 border border-cyber-cyan flex items-center justify-center text-cyber-cyan mb-2">
+          <i data-lucide="lock" class="w-6 h-6"></i>
+        </div>
+        <h4 class="text-xl font-bold text-white uppercase font-display">OWNER AUTHENTICATION REQUIRED</h4>
+        <p class="font-mono text-xs text-gray-400 max-w-xs">Enter your studio owner PIN to manage projects, services, skills, and client links.</p>
+        <div class="flex space-x-2">
+          <input type="password" id="admin-pin" placeholder="Enter PIN (Default: editx2026)" class="bg-black border border-white/20 rounded-lg px-4 py-2 text-center text-sm font-mono text-white focus:outline-none focus:border-cyber-cyan" />
+          <button onclick="unlockAdmin()" class="px-5 py-2 bg-cyber-cyan text-black font-mono text-xs font-bold rounded-lg hover:bg-white transition-all">UNLOCK</button>
+        </div>
+        <p class="text-[10px] font-mono text-gray-500">Security Note: Default master passcode is <code class="text-cyber-cyan">editx2026</code></p>
+      </div>
+
+      <!-- CMS Tabs & Dashboard (visible after unlock) -->
+      <div id="admin-dashboard" class="hidden flex-1 overflow-hidden flex flex-col">
+        <!-- Tabs -->
+        <div class="flex border-b border-white/10 bg-black/30 font-mono text-xs">
+          <button onclick="switchAdminTab('general')" id="tab-btn-general" class="px-4 py-3 border-b-2 border-cyber-cyan text-cyber-cyan font-bold">General & Contact</button>
+          <button onclick="switchAdminTab('projects')" id="tab-btn-projects" class="px-4 py-3 text-gray-400 hover:text-white">Portfolio Projects</button>
+          <button onclick="switchAdminTab('services')" id="tab-btn-services" class="px-4 py-3 text-gray-400 hover:text-white">Client Services</button>
+          <button onclick="switchAdminTab('skills')" id="tab-btn-skills" class="px-4 py-3 text-gray-400 hover:text-white">Skills Matrix</button>
+          <button onclick="switchAdminTab('backup')" id="tab-btn-backup" class="px-4 py-3 text-gray-400 hover:text-white">Backup / Export</button>
+        </div>
+
+        <!-- Tab 1: General & Contact -->
+        <div id="tab-content-general" class="p-6 overflow-y-auto space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">Studio / Editor Name</label>
+              <input type="text" id="cfg-name" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">Contact Email</label>
+              <input type="email" id="cfg-email" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">WhatsApp Number (e.g. 15550192834)</label>
+              <input type="text" id="cfg-whatsapp" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">Instagram URL</label>
+              <input type="text" id="cfg-instagram" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">YouTube Portfolio URL</label>
+              <input type="text" id="cfg-youtube" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-gray-400 mb-1">Location / Timezone</label>
+              <input type="text" id="cfg-location" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+          </div>
+          <div>
+            <label class="block font-mono text-xs text-gray-400 mb-1">Studio Bio / Manifesto</label>
+            <textarea id="cfg-bio" rows="3" class="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-xs text-white"></textarea>
+          </div>
+        </div>
+
+        <!-- Tab 2: Projects Management -->
+        <div id="tab-content-projects" class="p-6 overflow-y-auto space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-xs text-gray-400">Manage, edit, add, or delete projects</span>
+            <button onclick="addNewProjectPrompt()" class="px-3 py-1.5 bg-cyber-cyan text-black font-mono text-xs font-bold rounded-lg flex items-center gap-1.5 hover:bg-white">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Project
+            </button>
+          </div>
+          <div id="admin-projects-list" class="space-y-3 font-mono text-xs">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Client Services Management -->
+        <div id="tab-content-services" class="p-6 overflow-y-auto space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-xs text-gray-400">Manage client editing services & rates</span>
+            <button onclick="addNewServicePrompt()" class="px-3 py-1.5 bg-cyber-cyan text-black font-mono text-xs font-bold rounded-lg flex items-center gap-1.5 hover:bg-white">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Service
+            </button>
+          </div>
+          <div id="admin-services-list" class="space-y-3 font-mono text-xs">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Skills Matrix Management -->
+        <div id="tab-content-skills" class="p-6 overflow-y-auto space-y-4 hidden">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-mono text-xs text-gray-400">Adjust mastery levels and technical skills</span>
+            <button onclick="addNewSkillPrompt()" class="px-3 py-1.5 bg-cyber-cyan text-black font-mono text-xs font-bold rounded-lg flex items-center gap-1.5 hover:bg-white">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Skill
+            </button>
+          </div>
+          <div id="admin-skills-list" class="space-y-3 font-mono text-xs"></div>
+        </div>
+
+        <!-- Tab 5: Backup / JSON Export & Import -->
+        <div id="tab-content-backup" class="p-6 overflow-y-auto space-y-6 hidden font-mono text-xs">
+          <div>
+            <h5 class="font-bold text-white mb-1 uppercase">Export Full Site JSON</h5>
+            <p class="text-gray-400 text-[11px] mb-3">Download your entire configured website state to migrate to another device or save a backup.</p>
+            <button onclick="exportSiteJSON()" class="px-4 py-2 bg-cyber-cyan text-black font-bold rounded-lg flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Export Backup (.json)
+            </button>
+          </div>
+          <div class="border-t border-white/10 pt-4">
+            <h5 class="font-bold text-white mb-1 uppercase">Restore / Import JSON</h5>
+            <p class="text-gray-400 text-[11px] mb-3">Load a previously exported portfolio configuration.</p>
+            <input type="file" id="json-file-input" accept=".json" onchange="importSiteJSON(event)" class="text-gray-400 text-xs" />
+          </div>
+          <div class="border-t border-white/10 pt-4">
+            <h5 class="font-bold text-red-400 mb-1 uppercase">Factory Reset</h5>
+            <p class="text-gray-400 text-[11px] mb-3">Reset all data back to the default EDITX STUDIO portfolio seed.</p>
+            <button onclick="resetToFactoryDefault()" class="px-4 py-2 bg-red-600/30 border border-red-500 text-red-300 font-bold rounded-lg">
+              Reset All To Default
+            </button>
+          </div>
+        </div>
+
+        <!-- Save Button Bar -->
+        <div class="p-4 border-t border-white/10 bg-black/60 flex items-center justify-between">
+          <span id="save-status" class="font-mono text-xs text-cyber-cyan">Ready</span>
+          <button onclick="saveAdminChanges()" class="px-6 py-2.5 bg-cyber-cyan text-black font-mono text-xs font-bold rounded-lg hover:bg-white glow-cyan">
+            SAVE & PUBLISH CHANGES
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= CORE SCRIPTS (3D, CMS, & LOGIC) ================= -->
+  <script>
+    // ================= INITIAL DEFAULT SEED DATA =================
+    const DEFAULT_DATA = {
+      profile: {
+        name: "EDITX STUDIO",
+        email: "contact@editxstudio.com",
+        whatsapp: "15550192834",
+        instagram: "https://instagram.com",
+        youtube: "https://youtube.com",
+        location: "Los Angeles / Remote Worldwide",
+        bio: "Specializing in high-octane commercial edits, retention-engineered viral reels, ACES film color grading, and 3D motion graphics."
+      },
+      projects: [
+        {
+          id: 1,
+          title: "CYBERPUNK 2088 REEL",
+          category: "motion",
+          type: "3D Motion Graphics & VFX",
+          desc: "A futuristic trailer piece crafted with volumetric lighting, neon tracking HUDs, and sound design scored in 96kHz surround.",
+          thumb: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+          cuts: 218,
+          timeline: "4K DCI 60FPS",
+          tools: ["After Effects", "Cinema 4D", "Octane Render", "Premiere Pro"]
+        },
+        {
+          id: 2,
+          title: "HYPERCAR SPEC SPOT - APEX GT",
+          category: "commercial",
+          type: "Commercial Film",
+          desc: "High-octane commercial automotive commercial edit featuring dynamic speed ramping, custom engine roar sound layering, and ACES color grading.",
+          thumb: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          cuts: 142,
+          timeline: "8K Red RAW",
+          tools: ["DaVinci Resolve", "Premiere Pro", "Pro Tools"]
+        },
+        {
+          id: 3,
+          title: "APEX SPEED SERIES - VIRAL REELS",
+          category: "reels",
+          type: "Viral Short-Form",
+          desc: "Engineered specifically for short-form algorithms with 3-second hook retention, kinetic typography, and synchronized beat drops.",
+          thumb: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+          cuts: 98,
+          timeline: "9:16 Vertical 4K",
+          tools: ["Premiere Pro", "After Effects", "CapCut Pro"]
+        },
+        {
+          id: 4,
+          title: "SYNTHETIC DREAMS - MUSIC VIDEO",
+          category: "music",
+          type: "Cinematic Music Video",
+          desc: "Dark synthwave music video cut with rhythmic multi-cam sequencing, glitch morph transitions, and atmospheric lens flares.",
+          thumb: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+          cuts: 312,
+          timeline: "4K Anamorphic",
+          tools: ["DaVinci Resolve", "Premiere Pro", "Boris FX Sapphire"]
+        },
+        {
+          id: 5,
+          title: "DEEP SPACE DOCUMENTARY",
+          category: "commercial",
+          type: "Docu-Style Editing",
+          desc: "Paced documentary storytelling focused on visual clarity, clean lower thirds, archived footage restoration, and dialogue sweetening.",
+          thumb: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackSeeTheWorld.mp4",
+          cuts: 165,
+          timeline: "4K HDR Rec.2020",
+          tools: ["Premiere Pro", "DaVinci Resolve", "iZotope RX"]
+        },
+        {
+          id: 6,
+          title: "QUANTUM PROTOCOL - 3D EXPLAINER",
+          category: "motion",
+          type: "3D Motion Graphics",
+          desc: "Full 3D motion-design visual explainer showcasing isometric tech architecture, UI animations, and kinetic diagrams.",
+          thumb: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+          video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+          cuts: 88,
+          timeline: "60 FPS Master",
+          tools: ["Blender", "After Effects", "Illustrator"]
+        }
+      ],
+      services: [
+        {
+          id: 1,
+          name: "Short-Form Viral Retainers",
+          badge: "HIGH RETENTION",
+          deliverables: "Reels / TikTok / Shorts • Retention Hooks • Kinetic Typography • Sound Design • 48h Turnaround",
+          rate: "$2,400 / mo (12 Edits)"
+        },
+        {
+          id: 2,
+          name: "Commercial & Brand Films",
+          badge: "FLAGSHIP",
+          deliverables: "High-End Commercials • Multi-Cam Sync • Color Grading Suite • SFX Mastering • DCI-4K Export",
+          rate: "From $1,800 / Project"
+        },
+        {
+          id: 3,
+          name: "YouTube Docu-Storytelling",
+          badge: "RETENTION FOCUS",
+          deliverables: "Long-Form Pacing • Narrative Story Beats • B-Roll Sourcing • Audio Polish • Custom Thumbnails",
+          rate: "From $1,200 / Video"
+        },
+        {
+          id: 4,
+          name: "Color Grading & Finishing",
+          badge: "ACES PIPELINE",
+          deliverables: "DaVinci Resolve Studio • Shot Matching • Skin-Tone Balancing • Kodak/Fuji Film Stock Emulation",
+          rate: "$650 / Day Suite"
+        },
+        {
+          id: 5,
+          name: "3D Motion Graphics & VFX",
+          badge: "CGI & COMPOSITING",
+          deliverables: "3D Camera Tracking • Product CGI • Kinetic Title Sequences • Cleanups & Wire Removal",
+          rate: "Custom Quote"
+        },
+        {
+          id: 6,
+          name: "Audio Design & Mastering",
+          badge: "SPATIAL 96KHZ",
+          deliverables: "Foley Layering • Sub-Bass Impact SFX • Dialogue Isolation & Restoration • Stereo & 5.1",
+          rate: "$450 / Track"
+        }
+      ],
+      skills: [
+        { name: "DaVinci Resolve & ACES Color", level: 98, note: "Film Emulation & HDR" },
+        { name: "After Effects & Motion Design", level: 96, note: "Kinetic & 3D Tracking" },
+        { name: "Premiere Pro & Offline Cut", level: 99, note: "Rhythm & Pacing" },
+        { name: "Spatial Audio & SFX Design", level: 92, note: "Foley & Mixing" },
+        { name: "Blender & 3D Compositing", level: 88, note: "CGI & Camera Solves" },
+        { name: "Shorts Retention Science", level: 97, note: "Hook Optimization" },
+        { name: "Cinema 4D Abstract Motion", level: 85, note: "Broadcast Graphics" },
+        { name: "Thumbnail & Art Direction", level: 94, note: "CTR Maximization" }
+      ]
+    };
+
+    // Load from LocalStorage or seed default
+    let studioData = JSON.parse(localStorage.getItem('editx_studio_data') || 'null');
+    if (!studioData) {
+      studioData = DEFAULT_DATA;
+      localStorage.setItem('editx_studio_data', JSON.stringify(studioData));
+    }
+
+    // ================= THREE.JS BACKGROUND SCENE =================
+    let scene, camera, renderer, particles, timelineMeshGroup;
+    function initThreeScene() {
+      const canvas = document.getElementById('hero-webgl');
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 25;
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Particle Dust Grid (Cinematic Atmosphere)
+      const particleCount = 700;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 80;
+        positions[i + 1] = (Math.random() - 0.5) * 80;
+        positions[i + 2] = (Math.random() - 0.5) * 60;
+
+        // Mix Cyan & Magenta neon colors
+        const isCyan = Math.random() > 0.4;
+        colors[i] = isCyan ? 0.0 : 0.7;
+        colors[i + 1] = isCyan ? 0.94 : 0.15;
+        colors[i + 2] = 1.0;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const pMaterial = new THREE.PointsMaterial({
+        size: 0.28,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.65,
+        blending: THREE.AdditiveBlending
+      });
+
+      particles = new THREE.Points(geometry, pMaterial);
+      scene.add(particles);
+
+      // Floating 3D Geometric Timeline Wireframes & Keyframe Diamonds
+      timelineMeshGroup = new THREE.Group();
+      
+      // Floating Keyframe Octahedron
+      const octaGeo = new THREE.OctahedronGeometry(1.6, 0);
+      const wireMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.35 });
+      const octa = new THREE.Mesh(octaGeo, wireMat);
+      octa.position.set(12, 4, -5);
+      timelineMeshGroup.add(octa);
+
+      const octa2 = new THREE.Mesh(octaGeo, new THREE.MeshBasicMaterial({ color: 0xb026ff, wireframe: true, transparent: true, opacity: 0.35 }));
+      octa2.position.set(-14, -6, -2);
+      timelineMeshGroup.add(octa2);
+
+      // Floating 3D Torus (Color Wheel Simulation)
+      const torusGeo = new THREE.TorusGeometry(3.5, 0.04, 16, 100);
+      const torusMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.2 });
+      const torus = new THREE.Mesh(torusGeo, torusMat);
+      torus.position.set(-8, 7, -8);
+      timelineMeshGroup.add(torus);
+
+      scene.add(timelineMeshGroup);
+
+      // Subtle mouse move parallax
+      window.addEventListener('mousemove', onMouseMoveParallax);
+      window.addEventListener('resize', onWindowResize);
+      animateThree();
+    }
+
+    let mouseX = 0, mouseY = 0;
+    function onMouseMoveParallax(e) {
+      mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+      mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animateThree() {
+      requestAnimationFrame(animateThree);
+      particles.rotation.y += 0.0006;
+      particles.rotation.x += 0.0003;
+
+      timelineMeshGroup.rotation.y += 0.002;
+      timelineMeshGroup.rotation.x += 0.001;
+
+      // Smooth camera interpolation
+      camera.position.x += (mouseX * 12 - camera.position.x) * 0.05;
+      camera.position.y += (-mouseY * 12 - camera.position.y) * 0.05;
+      camera.lookAt(scene.position);
+
+      renderer.render(scene, camera);
+    }
+
+    // ================= RENDER DYNAMIC DATA =================
+    function renderSite() {
+      // Profile Info
+      const p = studioData.profile;
+      document.getElementById('nav-brand-name').innerText = p.name;
+      document.getElementById('footer-brand').innerText = p.name;
+      document.getElementById('btn-whatsapp').href = `https://wa.me/${p.whatsapp.replace(/[^0-9]/g, '')}`;
+      document.getElementById('btn-email-direct').href = `mailto:${p.email}`;
+      document.getElementById('btn-instagram').href = p.instagram;
+
+      // Render Projects
+      renderProjects('all');
+
+      // Render Services
+      const servicesContainer = document.getElementById('services-grid');
+      servicesContainer.innerHTML = studioData.services.map(s => `
+        <div class="glass-card p-8 rounded-2xl relative overflow-hidden flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="font-mono text-[10px] text-cyber-cyan border border-cyber-cyan/40 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                ${s.badge}
+              </span>
+              <i data-lucide="video" class="w-5 h-5 text-gray-400 group-hover:text-cyber-cyan transition-colors"></i>
+            </div>
+            <h3 class="text-xl font-display font-bold text-white uppercase mb-3">${s.name}</h3>
+            <p class="text-gray-300 font-mono text-xs leading-relaxed mb-6">${s.deliverables}</p>
+          </div>
+          <div class="border-t border-white/10 pt-4 flex items-center justify-between">
+            <span class="font-mono text-xs text-cyber-cyan font-bold">${s.rate}</span>
+            <a href="#contact" class="text-xs font-mono text-white flex items-center gap-1 hover:text-cyber-cyan">
+              Inquire <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+      `).join('');
+
+      // Render Skills
+      const skillsContainer = document.getElementById('skills-grid');
+      skillsContainer.innerHTML = studioData.skills.map(sk => `
+        <div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between hover:border-cyber-cyan/40 transition-colors">
+          <div class="flex items-center justify-between mb-3 font-mono text-xs">
+            <span class="text-gray-300 font-bold">${sk.name}</span>
+            <span class="text-cyber-cyan">${sk.level}%</span>
+          </div>
+          <!-- Animated Progress Gauge Bar -->
+          <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+            <div class="h-full bg-gradient-to-r from-cyber-cyan to-cyber-magenta rounded-full" style="width: ${sk.level}%"></div>
+          </div>
+          <span class="text-[10px] font-mono text-gray-400">${sk.note}</span>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderProjects(filter) {
+      const grid = document.getElementById('projects-grid');
+      const filtered = filter === 'all' 
+        ? studioData.projects 
+        : studioData.projects.filter(pr => pr.category === filter);
+
+      grid.innerHTML = filtered.map(item => `
+        <div class="tilt-card group">
+          <div class="glass-card rounded-2xl overflow-hidden border border-white/10 transition-transform duration-300 transform-gpu group-hover:-translate-y-2">
+            <!-- Project Thumbnail Container -->
+            <div class="relative aspect-video overflow-hidden bg-black cursor-pointer" onclick="openProjectModal(${item.id})">
+              <img src="${item.thumb}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
+              <!-- Hover Play Badge -->
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="w-14 h-14 rounded-full bg-cyber-cyan text-black flex items-center justify-center glow-cyan">
+                  <i data-lucide="play" class="w-6 h-6 fill-current ml-0.5"></i>
+                </div>
+              </div>
+              <div class="absolute bottom-2 left-2 bg-black/80 px-2.5 py-1 rounded font-mono text-[10px] text-cyber-cyan border border-cyber-cyan/30">
+                ${item.timeline || '4K 60FPS'}
+              </div>
+            </div>
+
+            <!-- Card Info -->
+            <div class="p-5 space-y-2">
+              <div class="flex items-center justify-between font-mono text-[11px]">
+                <span class="text-cyber-cyan uppercase">${item.type}</span>
+                <span class="text-gray-500">${item.cuts || 120} Cuts</span>
+              </div>
+              <h3 class="text-lg font-display font-bold text-white uppercase group-hover:text-cyber-cyan transition-colors">
+                ${item.title}
+              </h3>
+              <p class="text-gray-400 text-xs line-clamp-2 leading-relaxed font-sans">
+                ${item.desc}
+              </p>
+              
+              <!-- Watch Edit Button -->
+              <button onclick="openProjectModal(${item.id})" class="w-full mt-3 py-2.5 rounded-lg glass-panel border border-white/10 font-mono text-xs text-white hover:text-black hover:bg-cyber-cyan transition-all flex items-center justify-center gap-2">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Watch Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function filterProjects(cat) {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-cyber-cyan', 'text-black', 'font-bold');
+        btn.classList.add('glass-panel', 'text-gray-300');
+      });
+      event.target.classList.remove('glass-panel', 'text-gray-300');
+      event.target.classList.add('bg-cyber-cyan', 'text-black', 'font-bold');
+      renderProjects(cat);
+    }
+
+    // ================= BEFORE / AFTER SLIDER INTERACTION =================
+    const splitContainer = document.getElementById('split-container');
+    const splitReveal = document.getElementById('split-reveal');
+    const splitHandle = document.getElementById('split-handle');
+    let isDraggingSplit = false;
+
+    function handleSplitMove(clientX) {
+      const rect = splitContainer.getBoundingClientRect();
+      let pos = (clientX - rect.left) / rect.width;
+      if (pos < 0.05) pos = 0.05;
+      if (pos > 0.95) pos = 0.95;
+      const pct = pos * 100;
+      splitReveal.style.width = `${pct}%`;
+      splitHandle.style.left = `${pct}%`;
+    }
+
+    splitContainer.addEventListener('mousedown', () => isDraggingSplit = true);
+    window.addEventListener('mouseup', () => isDraggingSplit = false);
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSplit) return;
+      handleSplitMove(e.clientX);
+    });
+
+    // Touch support for Android / Mobile devices
+    splitContainer.addEventListener('touchstart', () => isDraggingSplit = true);
+    window.addEventListener('touchend', () => isDraggingSplit = false);
+    window.addEventListener('touchmove', (e) => {
+      if (!isDraggingSplit || !e.touches[0]) return;
+      handleSplitMove(e.touches[0].clientX);
+    });
+
+    // ================= SHOWREEL VIDEO CONTROLS =================
+    const mainReel = document.getElementById('main-reel-video');
+    const reelPlayIcon = document.getElementById('reel-play-icon');
+    const muteIcon = document.getElementById('mute-icon');
+
+    function toggleReelPlay() {
+      if (mainReel.paused) {
+        mainReel.play();
+        document.getElementById('reel-play-btn').classList.add('opacity-0');
+      } else {
+        mainReel.pause();
+        document.getElementById('reel-play-btn').classList.remove('opacity-0');
+      }
+    }
+
+    function toggleReelMute() {
+      mainReel.muted = !mainReel.muted;
+      if (mainReel.muted) {
+        muteIcon.setAttribute('data-lucide', 'volume-x');
+      } else {
+        muteIcon.setAttribute('data-lucide', 'volume-2');
+      }
+      lucide.createIcons();
+    }
+
+    function requestFullScreenReel() {
+      if (mainReel.requestFullscreen) {
+        mainReel.requestFullscreen();
+      }
+    }
+
+    mainReel.addEventListener('timeupdate', () => {
+      const cur = formatTime(mainReel.currentTime);
+      const dur = formatTime(mainReel.duration || 165);
+      document.getElementById('reel-timer').innerText = `${cur} / ${dur}`;
+      // Hero playhead simulation sync
+      document.getElementById('hero-timecode').innerText = `00:${cur}:24`;
+    });
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // ================= PROJECT MODAL CONTROLS =================
+    function openProjectModal(id) {
+      const p = studioData.projects.find(item => item.id === id);
+      if (!p) return;
+      document.getElementById('modal-title').innerText = p.title;
+      document.getElementById('modal-category').innerText = p.type;
+      document.getElementById('modal-desc').innerText = p.desc;
+      document.getElementById('modal-cuts').innerText = p.cuts || 140;
+      document.getElementById('modal-timeline').innerText = p.timeline || '4K 60FPS';
+      
+      const v = document.getElementById('modal-video');
+      v.src = p.video;
+      v.play();
+
+      const toolsEl = document.getElementById('modal-tools');
+      toolsEl.innerHTML = (p.tools || ['Premiere Pro', 'DaVinci Resolve']).map(t => `
+        <span class="px-2.5 py-1 rounded bg-white/10 text-cyber-cyan font-mono text-[10px] border border-white/10">${t}</span>
+      `).join('');
+
+      document.getElementById('project-modal').classList.remove('hidden');
+    }
+
+    function closeProjectModal() {
+      const v = document.getElementById('modal-video');
+      v.pause();
+      v.src = '';
+      document.getElementById('project-modal').classList.add('hidden');
+    }
+
+    // ================= FORM SUBMISSION =================
+    function handleInquirySubmit(e) {
+      e.preventDefault();
+      const toast = document.getElementById('form-toast');
+      toast.classList.remove('hidden');
+      e.target.reset();
+      setTimeout(() => toast.classList.add('hidden'), 5000);
+    }
+
+    // ================= ADMIN CMS CONTROLS =================
+    function openAdminModal() {
+      document.getElementById('admin-modal').classList.remove('hidden');
+    }
+    function closeAdminModal() {
+      document.getElementById('admin-modal').classList.add('hidden');
+    }
+
+    // Shortcut: Ctrl+Shift+E for Admin
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
+        openAdminModal();
+      }
+    });
+
+    function unlockAdmin() {
+      const pin = document.getElementById('admin-pin').value;
+      if (pin === 'editx2026' || pin === 'admin') {
+        document.getElementById('admin-auth').classList.add('hidden');
+        document.getElementById('admin-dashboard').classList.remove('hidden');
+        loadAdminForm();
+      } else {
+        alert('Invalid passcode. Default passcode is: editx2026');
+      }
+    }
+
+    function loadAdminForm() {
+      const p = studioData.profile;
+      document.getElementById('cfg-name').value = p.name;
+      document.getElementById('cfg-email').value = p.email;
+      document.getElementById('cfg-whatsapp').value = p.whatsapp;
+      document.getElementById('cfg-instagram').value = p.instagram;
+      document.getElementById('cfg-youtube').value = p.youtube;
+      document.getElementById('cfg-location').value = p.location;
+      document.getElementById('cfg-bio').value = p.bio;
+
+      renderAdminProjectsList();
+      renderAdminServicesList();
+      renderAdminSkillsList();
+    }
+
+    function switchAdminTab(tab) {
+      ['general', 'projects', 'services', 'skills', 'backup'].forEach(t => {
+        document.getElementById(`tab-content-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('border-b-2', 'border-cyber-cyan', 'text-cyber-cyan', 'font-bold');
+        btn.classList.add('text-gray-400');
+      });
+      document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tab}`);
+      activeBtn.classList.add('border-b-2', 'border-cyber-cyan', 'text-cyber-cyan', 'font-bold');
+      activeBtn.classList.remove('text-gray-400');
+    }
+
+    function renderAdminProjectsList() {
+      const container = document.getElementById('admin-projects-list');
+      container.innerHTML = studioData.projects.map((p, idx) => `
+        <div class="glass-panel p-3 rounded-lg border border-white/10 flex items-center justify-between">
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <img src="${p.thumb}" class="w-12 h-8 object-cover rounded bg-black" />
+            <div class="truncate">
+              <span class="text-white font-bold block truncate">${p.title}</span>
+              <span class="text-gray-500 text-[10px]">${p.type}</span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="editProjectPrompt(${p.id})" class="p-1.5 hover:text-cyber-cyan"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+            <button onclick="deleteProject(${p.id})" class="p-1.5 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderAdminServicesList() {
+      const container = document.getElementById('admin-services-list');
+      container.innerHTML = studioData.services.map(s => `
+        <div class="glass-panel p-3 rounded-lg border border-white/10 flex items-center justify-between">
+          <div>
+            <span class="text-white font-bold block">${s.name}</span>
+            <span class="text-cyber-cyan text-[10px]">${s.rate}</span>
+          </div>
+          <button onclick="deleteService(${s.id})" class="p-1.5 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderAdminSkillsList() {
+      const container = document.getElementById('admin-skills-list');
+      container.innerHTML = studioData.skills.map((sk, index) => `
+        <div class="glass-panel p-3 rounded-lg border border-white/10 flex items-center justify-between">
+          <div>
+            <span class="text-white font-bold">${sk.name}</span>
+            <span class="text-cyber-cyan text-xs ml-2">(${sk.level}%)</span>
+          </div>
+          <button onclick="deleteSkill(${index})" class="p-1.5 text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // CMS Add/Delete Actions
+    function addNewProjectPrompt() {
+      const title = prompt("Enter Project Title:");
+      if (!title) return;
+      const type = prompt("Enter Editing Type (e.g. Commercial Film, 3D Motion, Viral Reels):", "Commercial Film");
+      const thumb = prompt("Enter Thumbnail Image URL:", "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=800&q=80");
+      const video = prompt("Enter Direct MP4 Video URL (or public sample):", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4");
+      const desc = prompt("Enter Short Project Description:", "Cinematic edit showcasing rapid pacing and ACES grading.");
+
+      const newProj = {
+        id: Date.now(),
+        title,
+        category: "commercial",
+        type: type || "Commercial Film",
+        desc: desc || "High production quality edit.",
+        thumb: thumb || "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=800&q=80",
+        video: video || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+        cuts: 150,
+        timeline: "4K DCI",
+        tools: ["Premiere Pro", "DaVinci Resolve"]
+      };
+
+      studioData.projects.unshift(newProj);
+      renderAdminProjectsList();
+    }
+
+    function editProjectPrompt(id) {
+      const p = studioData.projects.find(item => item.id === id);
+      if (!p) return;
+      const newTitle = prompt("Update Project Title:", p.title);
+      if (newTitle) p.title = newTitle;
+      const newDesc = prompt("Update Project Description:", p.desc);
+      if (newDesc) p.desc = newDesc;
+      renderAdminProjectsList();
+    }
+
+    function deleteProject(id) {
+      if (!confirm("Are you sure you want to delete this project?")) return;
+      studioData.projects = studioData.projects.filter(p => p.id !== id);
+      renderAdminProjectsList();
+    }
+
+    function addNewServicePrompt() {
+      const name = prompt("Enter Service Name (e.g., Short-Form Viral Retainer):");
+      if (!name) return;
+      const rate = prompt("Enter Pricing / Rate (e.g., $2,500/mo):", "$2,000 / Project");
+      const deliverables = prompt("Enter Deliverables:", "Full offline cut, Color grading, SFX, 48h turnaround.");
+
+      studioData.services.push({
+        id: Date.now(),
+        name,
+        badge: "PRO SERVICE",
+        deliverables: deliverables || "Commercial Grade Delivery",
+        rate: rate || "Custom Quote"
+      });
+      renderAdminServicesList();
+    }
+
+    function deleteService(id) {
+      studioData.services = studioData.services.filter(s => s.id !== id);
+      renderAdminServicesList();
+    }
+
+    function addNewSkillPrompt() {
+      const name = prompt("Enter Skill / Software Name:");
+      if (!name) return;
+      const level = prompt("Proficiency % (1-100):", "95");
+      studioData.skills.push({
+        name,
+        level: parseInt(level) || 90,
+        note: "Master Level"
+      });
+      renderAdminSkillsList();
+    }
+
+    function deleteSkill(index) {
+      studioData.skills.splice(index, 1);
+      renderAdminSkillsList();
+    }
+
+    // Save All CMS Changes
+    function saveAdminChanges() {
+      studioData.profile.name = document.getElementById('cfg-name').value;
+      studioData.profile.email = document.getElementById('cfg-email').value;
+      studioData.profile.whatsapp = document.getElementById('cfg-whatsapp').value;
+      studioData.profile.instagram = document.getElementById('cfg-instagram').value;
+      studioData.profile.youtube = document.getElementById('cfg-youtube').value;
+      studioData.profile.location = document.getElementById('cfg-location').value;
+      studioData.profile.bio = document.getElementById('cfg-bio').value;
+
+      localStorage.setItem('editx_studio_data', JSON.stringify(studioData));
+      renderSite();
+
+      const status = document.getElementById('save-status');
+      status.innerText = "✓ Changes Saved & Published!";
+      setTimeout(() => {
+        status.innerText = "Ready";
+        closeAdminModal();
+      }, 1000);
+    }
+
+    // JSON Export / Import
+    function exportSiteJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(studioData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `EDITX_STUDIO_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importSiteJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.profile && imported.projects) {
+            studioData = imported;
+            localStorage.setItem('editx_studio_data', JSON.stringify(studioData));
+            renderSite();
+            loadAdminForm();
+            alert("✓ Backup successfully restored!");
+          } else {
+            alert("Invalid configuration file.");
+          }
+        } catch (err) {
+          alert("Error parsing JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToFactoryDefault() {
+      if (confirm("Reset all customizations back to factory default?")) {
+        localStorage.removeItem('editx_studio_data');
+        studioData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        renderSite();
+        loadAdminForm();
+        alert("Portfolio reset to default.");
+      }
+    }
+
+    // ================= INITIALIZATION =================
+    window.addEventListener('DOMContentLoaded', () => {
+      initThreeScene();
+      renderSite();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
